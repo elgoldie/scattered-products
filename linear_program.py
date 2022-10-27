@@ -11,7 +11,7 @@ a = lp.Param(value=a_const) # distance between buckets on log scale
 m_const = 300
 m = lp.Param(value=m_const) # number of buckets overall
 
-n = lp.Array(lp.Var,m_const,value=1,lb=0,ub=N, integer=True)
+n = lp.Array(lp.Var,m_const,value=70,lb=0,ub=N, integer=True)
 
 ylist = []
 #constraint_list = []
@@ -35,7 +35,7 @@ A_rows = []
 for j in range(m_const):
     row_list = []
     for i in range(m_const):
-        if j-a_const <= i <= j:
+        if j-a_const <= i < j:
             row_list.append(2**y[i])
         else:
             row_list.append(0)
@@ -63,9 +63,16 @@ lp.options.IMODE = 3 #steady state optimization
 lp.solve(disp=True)
 
 #Results
+non_emptyPoints = {}
 print('')
 print('Results')
 for i in range(len(n)):
-    print("n_"+str(i)+"="+str(int(n[i].value[0])))
+    if round(n[i].value[0]) != 0:
+        print('\033[96m \033[1m'+"n_"+str(i)+"="+str(round(n[i].value[0]))+"|x="+str(2**(-i/a_const))+'\033[0m')
+        non_emptyPoints["n_"+str(i)] = round(n[i].value[0])
+    else:
+        print("n_"+str(i)+"="+str(round(n[i].value[0]))+"|x="+str(2**(-i/a_const)))
+
 
 #print(A)
+print(non_emptyPoints)
