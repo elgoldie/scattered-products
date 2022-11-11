@@ -1,10 +1,10 @@
-module Main exposing (Model, Msg(..), render, update, view)
+module Main exposing (Model, Msg(..), pureFill, render, update, view)
 
 -- non-obvious dependencies: elm/svg
 
 import Array exposing (Array)
 import Browser
-import Html exposing (Html, br, button, div, input, span, text)
+import Html exposing (Html, br, button, div, input, span, table, td, text, th, tr)
 import Html.Attributes as Attrs exposing (style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Svg
@@ -136,19 +136,35 @@ pureFill n m =
         -- b : base
         -- c : exponent
         pureFillH a b c =
-            if a < (b ^ c) then
-                Array.repeat a (1 / toFloat (b ^ c))
+            if a < (b * (2 ^ c)) then
+                Array.repeat a (1 / toFloat (b * (2 ^ c)))
 
             else
                 Array.append
-                    (Array.repeat (b ^ c) (1 / toFloat (b ^ c)))
+                    (Array.repeat (b * (2 ^ c)) (1 / toFloat (b * (2 ^ c))))
                     (pureFillH
-                        (a - (b ^ c))
+                        (a - (b * (2 ^ c)))
                         b
                         (c + 1)
                     )
+
+        firstPointsH b c =
+            -- b : base
+            -- c : exponent
+            if 2 ^ (c + 1) > b then
+                Array.fromList []
+
+            else
+                Array.append
+                    (Array.repeat (2 ^ c) (1 / toFloat (2 ^ c)))
+                    (firstPointsH b (c + 1))
+
+        firstPoints =
+            firstPointsH n 0
     in
-    pureFillH m n 0
+    Array.append
+        firstPoints
+        (pureFillH (m - Array.length firstPoints) n 0)
 
 
 
@@ -179,13 +195,13 @@ view model =
         , checkAlpha
         , strategies
         , render model
-        , makeSliderAlpha model.alpha
-        , div []
-            (Array.toList
-                (Array.indexedMap
-                    makeSliderXi
-                    model.xis
-                )
+        , table [ style "width" "100%" ]
+            (makeSliderAlpha model.alpha
+                :: Array.toList
+                    (Array.indexedMap
+                        makeSliderXi
+                        model.xis
+                    )
             )
         ]
 
@@ -243,6 +259,10 @@ strategies =
             [ text " pure fill by 1/3^n "
             , button [ onClick (PureFill 3) ] [ text "select" ]
             ]
+        , span []
+            [ text " pure fill by 1/5^n"
+            , button [ onClick (PureFill 5) ] [ text "select" ]
+            ]
         ]
 
 
@@ -268,12 +288,15 @@ sumprod model =
         [ let
             p =
                 Array.foldr (*) 1 model.xis
+
+            s =
+                Array.foldr (+) 0 (Array.map (logBase 10) model.xis)
           in
           text
             ("product: "
                 ++ String.fromFloat p
                 ++ "(log_10 = "
-                ++ String.fromFloat (logBase 10 p)
+                ++ String.fromFloat s
                 ++ ")"
             )
         , br [] []
@@ -318,22 +341,27 @@ makeSliderAlpha curValue =
 
 makeSliderZeroOne : (Float -> Msg) -> String -> String -> Html Msg
 makeSliderZeroOne fmsg curValue label =
-    div []
-        [ text (label ++ ": ")
-        , input
-            [ type_ "range"
-            , Attrs.min "0"
-            , Attrs.max "1"
-            , Attrs.step "any"
-            , style "width" "66%"
-            , value curValue
-            , onInput (\s -> fmsg (Maybe.withDefault 0 (String.toFloat s)))
+    tr []
+        [ td [] [ text (label ++ ": ") ]
+        , td [ style "width" "75%" ]
+            [ input
+                [ type_ "range"
+                , Attrs.min "0"
+                , Attrs.max "1"
+                , Attrs.step "any"
+                , style "width" "100%"
+                , value curValue
+                , onInput (\s -> fmsg (Maybe.withDefault 0 (String.toFloat s)))
+                ]
+                []
             ]
-            []
-        , input
-            [ onInput (\s -> fmsg (Maybe.withDefault 0 (String.toFloat s)))
-            , value curValue
-            , style "width" "20%"
+        , td []
+            [ input
+                [ onInput (\s -> fmsg (Maybe.withDefault 0 (String.toFloat s)))
+                , value curValue
+
+                --, style "width" "20%"
+                ]
+                []
             ]
-            []
         ]
