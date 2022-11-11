@@ -1,0 +1,10 @@
+linear_program_dual.py
+linear_program_reciprocal.py
+matrix_construction.py
+quantized_graph.py
+results_general.txt
+results_reciprocal.txt
+results.txt
+scattering_test.py
+__pycache__/graphing.cpython-37.pyc
+.vscode/launch.json
